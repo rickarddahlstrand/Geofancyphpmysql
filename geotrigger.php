@@ -1,7 +1,7 @@
 <?php
 
 #
-# Copyright (c) 2013 Rickard Dahlstrand, Tilde All rights reserved.
+# Copyright (c) 2013 Rickard Dahlstrand . All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,6 +26,9 @@
 #
 ######################################################################
 
+# Report simple running errors
+error_reporting(E_ERROR | E_WARNING | E_PARSE);
+
 # Some stuff I need to stop PHP for complaining on my servers, change to whatever..
 date_default_timezone_set('Europe/Stockholm');
 setlocale("LC_ALL","sv_SE");
@@ -40,18 +43,50 @@ $id = addslashes($_REQUEST['id']);
 $latitude = addslashes($_REQUEST['latitude']);
 $longitude = addslashes($_REQUEST['longitude']);
 $trigger = addslashes($_REQUEST['trigger']);
+$endtext = "";
+
+#Add fakedata when debugging..
+$fakedata = false;
+if ($fakedata) {
+	$device = "00000000-0000-0000-0000-000000000000";
+	$id = "home";
+	$latitude = "0.0";
+	$longitude = "0.0";
+	$trigger = "exit";
+	$endtext = "";
+}
+
+# If exit reply wiht duration..
+if ($trigger == "exit") {
+	$query = "SELECT geolog.datetime FROM geolog WHERE geolog.`trigger` = 'enter' and geolog.device = '".$device."' and geolog.locationid = '".$id."' ORDER BY id DESC limit 1";
+	$ret = mysql_query($query);
+	while ($row = mysql_fetch_assoc($ret)) {
+		$enterdate = date_create($row['datetime']);
+		$interval = $enterdate->diff(new DateTime());
+		if ($interval->d) {
+			$endtext = $endtext . "You where here for " . $interval->format('%dd %hh %im') . ".";			
+		} else if ($interval->h) {
+			$endtext = $endtext . "You where here for " . $interval->format('%hh %im') . ".";			
+		} else {
+			$endtext = $endtext . "You where here for " . $interval->format('%im') . ".";			
+		}
+		
+	}	
+}
 
 # Create query to write to DB.
 $query = "insert into geolog (`device`, `locationid`, `latitude`, `longitude`, `trigger`, `datetime`) values ('".$device."', '".$id."', '".$latitude."', '".$longitude."', '".$trigger."', now());";
 
 # Write to DB.
-$ret = mysql_query($query);
+if ($fakedata === false) {
+	$ret = mysql_query($query);
+}
 
 # Send back an ACK that the position was stored or error if there was an error.
 if ( $ret === false ){
 	echo "Error writing to DB..";
 } else {
-	echo "You triggered an ".$trigger." at ".$id."";
+	echo "You triggered an ".$trigger." at ".$id.". ".$endtext;
 }
 
 ?>
