@@ -33,6 +33,74 @@ error_reporting(E_ERROR | E_WARNING | E_PARSE);
 date_default_timezone_set('Europe/Stockholm');
 setlocale("LC_ALL","sv_SE");
 
+# Function to do stuff over http..
+function exec_http($url, $postdata, $exptreturn, $onsuccess, $onfail) {
+	$params = array('http' => array(
+	    'method' => 'POST',
+	    'content' => $postdata
+	));
+
+	$ctx = stream_context_create($params);
+	$fp = @fopen($url, 'rb', false, $ctx);
+	if (!$fp)
+	{
+	    throw new Exception("Problem with $url, $php_errormsg");
+	}
+
+	$response = @stream_get_contents($fp);
+	if ($response === false) 
+	{
+	    throw new Exception("Problem reading data from $url, $php_errormsg");
+	}
+
+	if (strrpos($response, $exptreturn) === false) {
+		$ret = $onfail;
+	} else {
+		$ret = $onsuccess;		
+	}
+	
+	return $ret;
+}
+
+# Function to do stuff over ssh..
+function exec_ssh($ssh_host, $ssh_port, $ssh_auth_user, $ssh_auth_pub, $ssh_auth_priv, $ssh_auth_pass, $cmd, $exptreturn, $onsuccess, $onfail) {
+    if (!($connection = ssh2_connect($ssh_host, $ssh_port))) { 
+        throw new Exception('Cannot connect to server'); 
+    } 
+
+    if (!ssh2_auth_pubkey_file($connection, $ssh_auth_user, $ssh_auth_pub, $ssh_auth_priv, $ssh_auth_pass)) { 
+        throw new Exception('Autentication rejected by server'); 
+    } 
+	
+    if (!($stream = ssh2_exec($connection, $cmd))) { 
+        throw new Exception('SSH command failed'); 
+    } 
+	
+    stream_set_blocking($stream, true); 
+    $data = "";
+	
+    while ($buf = fread($stream, 4096)) { 
+        $data .= $buf; 
+    } 
+	
+    fclose($stream); 
+	
+	# Terminating connection..
+    if (!($stream = ssh2_exec($connection, "exit"))) { 
+        throw new Exception('Couldnt terminate connection'); 
+    } 
+	
+    $connection = null;
+
+	if (strrpos($data, $exptreturn) === false) {
+		$ret = $onfail;
+	} else {
+		$ret = $onsuccess;		
+	}
+	
+	return $ret;		
+}
+
 # Connect to mysql-server
 mysql_connect('localhost', 'geo_admin', 'geo_admin_password');
 mysql_select_db('geo');
@@ -71,6 +139,19 @@ if ($trigger == "exit") {
 			$endtext = $endtext . "You where here for " . $interval->format('%im') . ".";			
 		}
 		
+	}	
+}
+
+$query = "SELECT * FROM actions WHERE enabled=1 and `trigger` = '".$trigger."' and device = '".$device."' and locationid = '".$id."' ORDER BY id";
+
+$ret = mysql_query($query);
+while ($row = mysql_fetch_assoc($ret)) {
+	if (strtolower($row['connectiontype']) == 'http') {
+		$endtext = exec_http($row['server'], $row['postdata'], $row['expreturn'] , $row['onsuccess'] , $row['onfail']);
+	}
+
+	if (strtolower($row['connectiontype']) == 'ssh') {
+		$endtext = exec_ssh($row['server'], $row['port'], $row['user'], $row['pubkey'], $row['privkey'], $row['privkeypass'], $row['cmd'],  $row['expreturn'] , $row['onsuccess'] , $row['onfail']);
 	}	
 }
 
