@@ -106,11 +106,24 @@ mysql_connect('localhost', 'geo_admin', 'geo_admin_password');
 mysql_select_db('geo');
 
 # Read all the values from the request and put them i vars.
+
+if (isset($_REQUEST['name'])) {
+	# http://www.geofency.com/
+	$id = addslashes($_REQUEST['name']);
+	if ($_REQUEST['entry']== "1") {
+		$trigger = "enter";
+	} else {
+		$trigger = "exit";
+	}	
+} else {
+	# http://www.geofancy.com/
+	$id = addslashes($_REQUEST['id']);
+	$trigger = addslashes($_REQUEST['trigger']);
+}
+
 $device = addslashes($_REQUEST['device']);
-$id = addslashes($_REQUEST['id']);
 $latitude = addslashes($_REQUEST['latitude']);
 $longitude = addslashes($_REQUEST['longitude']);
-$trigger = addslashes($_REQUEST['trigger']);
 $endtext = "";
 
 #Add fakedata when debugging..
@@ -132,11 +145,11 @@ if ($trigger == "exit") {
 		$enterdate = date_create($row['datetime']);
 		$interval = $enterdate->diff(new DateTime());
 		if ($interval->d) {
-			$endtext = $endtext . "You where here for " . $interval->format('%dd %hh %im') . ".";			
+			$endtext = $endtext . "You where here for " . $interval->format('%dd %hh %im') . ". ";			
 		} else if ($interval->h) {
-			$endtext = $endtext . "You where here for " . $interval->format('%hh %im') . ".";			
+			$endtext = $endtext . "You where here for " . $interval->format('%hh %im') . ". ";			
 		} else {
-			$endtext = $endtext . "You where here for " . $interval->format('%im') . ".";			
+			$endtext = $endtext . "You where here for " . $interval->format('%im') . ". ";			
 		}
 		
 	}	
@@ -147,11 +160,11 @@ $query = "SELECT * FROM actions WHERE enabled=1 and `trigger` = '".$trigger."' a
 $ret = mysql_query($query);
 while ($row = mysql_fetch_assoc($ret)) {
 	if (strtolower($row['connectiontype']) == 'http') {
-		$endtext = exec_http($row['server'], $row['postdata'], $row['expreturn'] , $row['onsuccess'] , $row['onfail']);
+		$endtext = $endtext . exec_http($row['server'], $row['postdata'], $row['expreturn'] , $row['onsuccess'] , $row['onfail']);
 	}
 
 	if (strtolower($row['connectiontype']) == 'ssh') {
-		$endtext = exec_ssh($row['server'], $row['port'], $row['user'], $row['pubkey'], $row['privkey'], $row['privkeypass'], $row['cmd'],  $row['expreturn'] , $row['onsuccess'] , $row['onfail']);
+		$endtext = $endtext . exec_ssh($row['server'], $row['port'], $row['user'], $row['pubkey'], $row['privkey'], $row['privkeypass'], $row['cmd'],  $row['expreturn'] , $row['onsuccess'] , $row['onfail']);
 	}	
 }
 

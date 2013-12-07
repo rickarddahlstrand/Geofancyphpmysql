@@ -1,4 +1,4 @@
-This is an simple php & mysql-backend to the iOS-app Geofancy http://geofancy.com 
+This is an simple php & mysql-backend to the iOS-app Geofancy http://geofancy.com and Geofency http://geofency.com
 
 It stores all the geofence-events in an database and supports http/https/ssh-actions.
 
