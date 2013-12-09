@@ -1,4 +1,6 @@
-This is an simple php & mysql-backend to the iOS-app Geofancy http://geofancy.com and Geofency http://geofency.com
+This is an simple php & mysql-backend that stores Geofence activities and allows you to take actions (turn on lights, send messages etc).
+
+It works with both Geofancy http://geofancy.com and Geofency http://geofency.com (use whichever suits you best).
 
 It stores all the geofence-events in an database and supports http/https/ssh-actions.
 
