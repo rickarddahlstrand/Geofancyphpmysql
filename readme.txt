@@ -13,7 +13,7 @@ Instructions:
 3. Create a user/password with access to the geolog-database and table
 4. Copy the geotrigger.php to a webserver with PHP and Mysql-client extensions.
 5. Update geotrigger.php with your mysql-config, username, password etc.
-6. Go to the app and trigger a test-even from settings.
+6. Go to the app and trigger a test-event from settings.
 7. Check the table for successful logging or else troubleshoot.
 
 Good luck!
