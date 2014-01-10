@@ -2,7 +2,7 @@ This is an simple php & mysql-backend that stores Geofence activities and allows
 
 It works with both Geofancy http://geofancy.com and Geofency http://geofency.com (use whichever suits you best).
 
-It stores all the geofence-events in an database and supports http/https/ssh-actions.
+It stores all the geofence-events in an database and supports http/https/ssh-actions plus telnet (thanks @bbrendon).
 
 This can be used on it's own or as a base for more advanced timekeeping applications. 
 
