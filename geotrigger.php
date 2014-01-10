@@ -101,6 +101,28 @@ function exec_ssh($ssh_host, $ssh_port, $ssh_auth_user, $ssh_auth_pub, $ssh_auth
 	return $ret;		
 }
 
+# Function to do stuff over telnet...
+function exec_telnet($telnet_host, $telnet_port, $postdata, $exptreturn, $onsuccess, $onfail) {
+
+      $fp = fsockopen($telnet_host, $telnet_port, $errno, $errstr, 30); // host,port,errorNumber,errorString,timeout
+
+
+      if (!$fp) {
+              echo "$errstr ($errno)\n";
+              $ret = $onfail;
+              throw new Exception("Problem with $telnet_host, $php_errormsg");
+      } else {
+                $ret = $onsuccess;
+      }
+
+      $postdata .= "\r\n";
+
+      fwrite($fp, $postdata);
+      fclose($fp);
+
+      return $ret;
+}
+
 # Connect to mysql-server
 mysql_connect('localhost', 'geo_admin', 'geo_admin_password');
 mysql_select_db('geo');
@@ -137,7 +159,7 @@ if ($fakedata) {
 	$endtext = "";
 }
 
-# If exit reply wiht duration..
+# If exit reply with duration...
 if ($trigger == "exit") {
 	$query = "SELECT geolog.datetime FROM geolog WHERE geolog.`trigger` = 'enter' and geolog.device = '".$device."' and geolog.locationid = '".$id."' ORDER BY id DESC limit 1";
 	$ret = mysql_query($query);
@@ -166,6 +188,10 @@ while ($row = mysql_fetch_assoc($ret)) {
 	if (strtolower($row['connectiontype']) == 'ssh') {
 		$endtext = $endtext . exec_ssh($row['server'], $row['port'], $row['user'], $row['pubkey'], $row['privkey'], $row['privkeypass'], $row['cmd'],  $row['expreturn'] , $row['onsuccess'] , $row['onfail']);
 	}	
+
+        if (strtolower($row['connectiontype']) == 'telnet') {
+                $endtext = $endtext . exec_telnet($row['server'], $row['port'], $row['postdata'], $row['expreturn'] , $row['onsuccess'] , $row['onfail']);
+        }
 }
 
 # Create query to write to DB.
